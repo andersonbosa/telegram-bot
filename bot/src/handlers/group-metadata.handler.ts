@@ -4,9 +4,8 @@ import { BaseHandler } from "./base.handler"
 
 export class GroupMetadataHandler extends BaseHandler {
     protected async validation(ctx: Context): Promise<boolean> {
-        const hasMsg = Boolean(ctx.message?.text)
-        this.logger.debug(`GroupMetadataHandler validation: ${hasMsg ? "passed" : "failed"}`,)
-        return hasMsg
+        this.logger.debug(`GroupMetadataHandler validation: passed`)
+        return true
     }
 
     protected async handle(ctx: Context): Promise<void> {
@@ -16,8 +15,14 @@ export class GroupMetadataHandler extends BaseHandler {
             return
         }
 
-        const groupMetadata = ctx.message.chat
+        const groupMetadata = {
+            ...ctx.message,
+            // forum_id: ctx.message?.message_thread_id
+        }
         this.logger.info(`GroupMetadataHandler: Group ID: ${groupId}`)
         this.logger.info(`GroupMetadataHandler: Group Metadata: ${JSON.stringify(groupMetadata)}`)
+        ctx.reply(JSON.stringify(groupMetadata, null, 2), {
+            reply_to_message_id: ctx.message!.message_id,
+        })
     }
 }

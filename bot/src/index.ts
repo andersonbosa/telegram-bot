@@ -14,11 +14,12 @@ async function main() {
     const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!)
 
     const eventHandlerManager = new EventHandlerManager()
-    eventHandlerManager.register("message", new HelloHandler())
-    eventHandlerManager.register("::mention", new VideoCategorizerHandler())
+    // eventHandlerManager.register("message", new HelloHandler())
+    // eventHandlerManager.register("::mention", new HelloHandler())
+    // eventHandlerManager.register("::mention", new VideoCategorizerHandler())
     eventHandlerManager.attach(bot)
 
-    // bot.command("/group_metadata", ctx => new GroupMetadataHandler().execute(ctx))
+    bot.command("get_chat_info", ctx => new GroupMetadataHandler().execute(ctx))
 
     bot.catch((err) => {
         const ctx = err.ctx

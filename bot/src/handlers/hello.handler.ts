@@ -5,9 +5,7 @@ import { BaseHandler } from "./base.handler"
 export class HelloHandler extends BaseHandler {
     protected async validation(ctx: Context): Promise<boolean> {
         const isTextMessage = !!ctx.message?.text
-        this.logger.debug(
-            `HelloHandler validation: ${isTextMessage ? "passed" : "failed"}`,
-        )
+        this.logger.debug( `HelloHandler validation: ${isTextMessage ? "passed" : "failed"}`, )
         return isTextMessage
     }
 

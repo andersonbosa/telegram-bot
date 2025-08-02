@@ -11,6 +11,8 @@ async function main() {
     logger.info("Bot is starting...")
 
     const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!)
+
+    bot.api.sendMessage(123, "Hello")
     
     const eventHandlerManager = new EventHandlerManager()
     eventHandlerManager.register("message", new HelloHandler())

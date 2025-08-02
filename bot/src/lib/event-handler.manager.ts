@@ -1,5 +1,5 @@
 import { Bot, FilterQuery } from "grammy"
-import { BaseHandler } from "./base.handler"
+import { BaseHandler } from "../handlers/base.handler"
 import logger from "../services/logger.service"
 
 export class EventHandlerManager {

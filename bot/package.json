@@ -3,11 +3,17 @@
   "version": "1.0.0",
   "license": "CC0-1.0",
   "private": true,
+  "bin": {
+    "tgbot": "./dist/cli.js"
+  },
   "scripts": {
     "dev": "LOG_LEVEL=debug tsx --watch --inspect ./src/index.ts",
     "start": "node ./dist/index.js",
     "build": "tsc",
-    "build:watch": "tsc --watch"
+    "build:watch": "tsc --watch",
+    "cli": "tsx src/cli.ts",
+    "cli:dev": "tsx --watch src/cli.ts",
+    "cli:build": "tsc && chmod +x dist/cli.js"
   },
   "engines": {
     "node": ">=20.x"
@@ -23,8 +29,12 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
     "dotenv": "^17.2.1",
     "grammy": "^1.37.0",
+    "inquirer": "^12.9.0",
+    "ora": "^8.2.0",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "zod": "^4.0.13"

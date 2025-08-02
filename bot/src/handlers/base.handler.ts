@@ -10,6 +10,9 @@ export abstract class BaseHandler {
         return handler
     }
 
+    protected abstract validation(ctx: Context): Promise<boolean>
+    protected abstract handle(ctx: Context): Promise<void>
+    
     public async execute(ctx: Context): Promise<void> {
         try {
             const isValid = await this.validation(ctx)
@@ -30,7 +33,4 @@ export abstract class BaseHandler {
             await this.next.execute(ctx)
         }
     }
-
-    protected abstract validation(ctx: Context): Promise<boolean>
-    protected abstract handle(ctx: Context): Promise<void>
 }

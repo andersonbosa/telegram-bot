@@ -1,9 +1,10 @@
 import { Bot } from "grammy"
 import { configDotenv } from "dotenv"
-import { EventHandlerManager } from "./handlers/event-handler.manager"
+import { EventHandlerManager } from "./lib/event-handler.manager"
 import { HelloHandler } from "./handlers/hello.handler"
 import { VideoCategorizerHandler } from "./handlers/video-categorizer.handler"
 import logger from "./services/logger.service"
+import { GroupMetadataHandler } from "./handlers/group-metadata.handler"
 
 configDotenv()
 
@@ -12,13 +13,12 @@ async function main() {
 
     const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!)
 
-    bot.api.sendMessage(123, "Hello")
-    
     const eventHandlerManager = new EventHandlerManager()
     eventHandlerManager.register("message", new HelloHandler())
-    eventHandlerManager.register("::mention", new HelloHandler())
     eventHandlerManager.register("::mention", new VideoCategorizerHandler())
     eventHandlerManager.attach(bot)
+
+    // bot.command("/group_metadata", ctx => new GroupMetadataHandler().execute(ctx))
 
     bot.catch((err) => {
         const ctx = err.ctx

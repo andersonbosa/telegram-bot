@@ -1,0 +1,19 @@
+services:
+    bot-api:
+        image: aiogram/telegram-bot-api:latest
+        env_file: ./.env
+
+    bot:
+        build:
+            context: .
+        command: npm run dev
+        env_file: ./.env
+        ports:
+            - 3000:3000
+        depends_on:
+            - bot-api
+        volumes:
+            - .:/usr/home/node
+            # - /usr/home/node/node_modules
+            # - /usr/home/node/dist
+            # - /usr/home/node/package-lock.json

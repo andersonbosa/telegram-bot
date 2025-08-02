@@ -19,7 +19,7 @@ async function main() {
     // eventHandlerManager.register("::mention", new VideoCategorizerHandler())
     eventHandlerManager.attach(bot)
 
-    bot.command("get_chat_info", ctx => new GroupMetadataHandler().execute(ctx))
+    bot.command("chatinfo", ctx => new GroupMetadataHandler().execute(ctx))
 
     bot.catch((err) => {
         const ctx = err.ctx

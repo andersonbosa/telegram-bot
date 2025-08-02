@@ -54,5 +54,28 @@ program
         }
     })
 
+program
+    .command('send-message')
+    .description('Send a message to a specific group')
+    .argument('<groupId>', 'Telegram group ID')
+    .argument('<topicId>', 'Telegram topic ID')
+    .argument('<message>', 'Message to send')
+    .action(async (groupId: string, topicId: string, message: string) => {
+        const spinner = ora('Sending message...').start()
+        try {
+            const response = await bot.api.sendMessage(groupId, message, {
+                message_thread_id: Number(topicId),
+            })
+            spinner.succeed('Message sent successfully')
+            logger.info(response)
+        } catch (error) {
+            spinner.fail('Failed to send message')
+            logger.error('Error sending message:', error)
+            process.exit(1)
+        }
+    })
+
+
+    
 // Parse command line arguments
 program.parse()

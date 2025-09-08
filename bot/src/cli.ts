@@ -1,28 +1,13 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander'
-import chalk from 'chalk'
-import ora from 'ora'
 import { Bot } from 'grammy'
 import { config } from './config/config'
-import { logger } from './services/logger.service'
+import { UploadFileCommand } from './commands/upload-file.command'
+import { GetChatCommand } from './commands/get-chat.command'
+import { SendMessageCommand } from './commands/send-message.command'
 
-interface ForumTopic {
-    message_thread_id: number
-    name: string
-    icon?: {
-        custom_emoji_id: string
-    }
-    creation_date: number
-}
-
-interface TelegramResponse {
-    ok: boolean
-    result: ForumTopic[]
-    description?: string
-}
-
-const program = new Command()
+export const program = new Command()
 
 program
     .name('telegram-bot-cli')
@@ -31,27 +16,17 @@ program
 
 const bot = new Bot(config.telegram.botToken || '')
 
+// Initialize command instances
+const uploadFileCommand = new UploadFileCommand(bot)
+const getChatCommand = new GetChatCommand(bot)
+const sendMessageCommand = new SendMessageCommand(bot)
+
 program
-    .command('list-topics')
-    .description('List all topics in a specific group')
+    .command('get-chat')
+    .description('Get a specific chat')
     .argument('<groupId>', 'Telegram group ID')
     .action(async (groupId: string) => {
-        const spinner = ora('Fetching group topics...').start()
-
-        try {
-            const response = await bot.api.getChat(groupId)
-            if (!response) {
-                throw new Error('Failed to fetch forum topics')
-            }
-
-            spinner.succeed('Successfully fetched group topics')
-            logger.info(response)
-
-        } catch (error) {
-            spinner.fail('Failed to fetch group topics')
-            logger.error('Error fetching group topics:', error)
-            process.exit(1)
-        }
+        await getChatCommand.execute(groupId)
     })
 
 program
@@ -61,18 +36,7 @@ program
     .argument('<topicId>', 'Telegram topic ID')
     .argument('<message>', 'Message to send')
     .action(async (groupId: string, topicId: string, message: string) => {
-        const spinner = ora('Sending message...').start()
-        try {
-            const response = await bot.api.sendMessage(groupId, message, {
-                message_thread_id: Number(topicId),
-            })
-            spinner.succeed('Message sent successfully')
-            logger.info(response)
-        } catch (error) {
-            spinner.fail('Failed to send message')
-            logger.error('Error sending message:', error)
-            process.exit(1)
-        }
+        await sendMessageCommand.execute({ groupId, topicId, message })
     })
 
 program
@@ -83,35 +47,28 @@ program
     .argument('<filePath>', 'Path to the file to upload')
     .option('-c, --caption <caption>', 'Caption for the file', '')
     .action(async (groupId: string, topicId: string, filePath: string, options: { caption?: string }) => {
-        const spinner = ora('Uploading file...').start()
-        try {
-            const { existsSync, createReadStream } = await import('fs')
-            const { basename } = await import('path')
-
-            if (!existsSync(filePath)) {
-                spinner.fail('File does not exist')
-                process.exit(1)
-            }
-
-            const fileName = basename(filePath)
-            const { InputFile } = await import('grammy')
-            const fileStream = createReadStream(filePath)
-            const inputFile = new InputFile(fileStream, fileName)
-
-            const response = await bot.api.sendVideo(groupId, inputFile, {
-                message_thread_id: Number(topicId),
-                caption: options.caption,
-            })
-
-            spinner.succeed('File uploaded successfully')
-            logger.info(response)
-        } catch (error) {
-            spinner.fail('Failed to upload file')
-            logger.error('Error uploading file:', error)
-            process.exit(1)
-        }
+        await uploadFileCommand.uploadSingleFile({
+            groupId,
+            topicId,
+            filePath,
+            caption: options.caption
+        })
     })
 
+
+program
+    .command('upload-folder')
+    .description('Upload all files from a folder to a specific group and topic')
+    .argument('<groupId>', 'Telegram group ID')
+    .argument('<folderPath>', 'Path to the folder to upload')
+    .argument('<referenceBasePath>', 'Path to the reference base path')
+    .action(async (groupId: string, folderPath: string, referenceBasePath: string) => {
+        await uploadFileCommand.uploadFolder({
+            groupId,
+            folderPath,
+            referenceBasePath
+        })
+    })
 
 // Parse command line arguments
 program.parse()

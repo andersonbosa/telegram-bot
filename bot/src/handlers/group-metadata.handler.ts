@@ -14,10 +14,12 @@ export class GroupMetadataHandler extends BaseHandler {
             this.logger.error("GroupMetadataHandler: No group ID found")
             return
         }
-        
+
         const groupMetadata = {
-            ...ctx.message,
+            // ...ctx.message,
+            chat_id: ctx.message.chat.id,
             message_thread_id: ctx.message.message_thread_id,
+            forum_name: ctx.message.reply_to_message?.forum_topic_created?.name,
         }
         this.logger.info(`GroupMetadataHandler: Group ID: ${groupId}`)
         this.logger.info(`GroupMetadataHandler: Group Metadata: ${JSON.stringify(groupMetadata)}`)

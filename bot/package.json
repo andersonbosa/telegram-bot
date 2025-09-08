@@ -13,7 +13,8 @@
     "build:watch": "tsc --watch",
     "cli": "tsx src/cli.ts",
     "cli:dev": "tsx --watch src/cli.ts",
-    "cli:build": "tsc && chmod +x dist/cli.js"
+    "cli:build": "tsc && chmod +x dist/cli.js",
+    "test": "tsx --watch ./**/*.test.ts"
   },
   "engines": {
     "node": ">=20.x"
@@ -37,6 +38,7 @@
     "ora": "^8.2.0",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
+    "youtube-dl-exec": "^3.0.24",
     "zod": "^4.0.13"
   }
 }

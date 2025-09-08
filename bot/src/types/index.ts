@@ -1,4 +1,50 @@
 
+// Command interfaces
+export interface CommandOptions {
+    caption?: string;
+}
+
+export interface UploadFileOptions extends CommandOptions {
+    groupId: string;
+    topicId: string;
+    filePath: string;
+}
+
+export interface UploadFolderOptions {
+    groupId: string;
+    folderPath: string;
+    referenceBasePath: string;
+}
+
+export enum FileType {
+    VIDEO = 'video',
+    AUDIO = 'audio',
+    PHOTO = 'photo',
+    DOCUMENT = 'document'
+}
+
+export interface FileUploadResult {
+    success: boolean;
+    fileName: string;
+    messageId?: number;
+    error?: string;
+}
+
+export interface ForumTopic {
+    message_thread_id: number;
+    name: string;
+    icon?: {
+        custom_emoji_id: string;
+    };
+    creation_date: number;
+}
+
+export interface TelegramResponse {
+    ok: boolean;
+    result: ForumTopic[];
+    description?: string;
+}
+
 // só para ajudar a entender o payload
 export interface TelegramMessage {
     message_id: number,

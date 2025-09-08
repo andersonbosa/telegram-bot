@@ -46,12 +46,14 @@ program
     .argument('<topicId>', 'Telegram topic ID')
     .argument('<filePath>', 'Path to the file to upload')
     .option('-c, --caption <caption>', 'Caption for the file', '')
-    .action(async (groupId: string, topicId: string, filePath: string, options: { caption?: string }) => {
+    .option('-d, --dry-run', 'Simulate the upload without actually uploading the file', false)
+    .action(async (groupId: string, topicId: string, filePath: string, options: { caption?: string; dryRun?: boolean }) => {
         await uploadFileCommand.uploadSingleFile({
             groupId,
             topicId,
             filePath,
-            caption: options.caption
+            caption: options.caption,
+            dryRun: options.dryRun
         })
     })
 
@@ -62,11 +64,13 @@ program
     .argument('<groupId>', 'Telegram group ID')
     .argument('<folderPath>', 'Path to the folder to upload')
     .argument('<referenceBasePath>', 'Path to the reference base path')
-    .action(async (groupId: string, folderPath: string, referenceBasePath: string) => {
+    .option('-d, --dry-run', 'Simulate the uploads without actually uploading the files', false)
+    .action(async (groupId: string, folderPath: string, referenceBasePath: string, options: { dryRun?: boolean }) => {
         await uploadFileCommand.uploadFolder({
             groupId,
             folderPath,
-            referenceBasePath
+            referenceBasePath,
+            dryRun: options.dryRun
         })
     })
 

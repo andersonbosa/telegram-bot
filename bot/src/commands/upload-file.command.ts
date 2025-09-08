@@ -14,34 +14,63 @@ export class UploadFileCommand {
     }
 
     /**
-     * Uploads a single file to a Telegram topic
+     * Formats file size for display
+     */
+    private formatFileSize(bytes: number): string {
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        if (bytes === 0) return '0 Bytes';
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    /**
+     * Uploads a single file to a Telegram topic or simulates the upload in dry-run mode
      */
     async uploadSingleFile(options: UploadFileOptions): Promise<void> {
-        const spinner = ora('Uploading file...').start();
+        const { dryRun = false } = options;
+        const spinnerText = dryRun ? 'Analyzing file...' : 'Uploading file...';
+        const spinner = ora(spinnerText).start();
         
         try {
             const result = await this.fileUploadService.uploadFile(options);
             
             if (result.success) {
-                spinner.succeed(`File uploaded successfully: ${result.fileName}`);
+                if (result.dryRun) {
+                    const fileInfo = [
+                        `File: ${result.fileName}`,
+                        `Type: ${result.fileType}`,
+                        result.fileSize ? `Size: ${this.formatFileSize(result.fileSize)}` : '',
+                        `Group ID: ${options.groupId}`,
+                        `Topic ID: ${options.topicId}`,
+                        options.caption ? `Caption: ${options.caption}` : `Caption: ${result.fileName}`
+                    ].filter(Boolean).join(' | ');
+                    
+                    spinner.succeed(`DRY RUN - Would upload: ${fileInfo}`);
+                } else {
+                    const fileInfo = result.fileSize ? ` (${this.formatFileSize(result.fileSize)})` : '';
+                    spinner.succeed(`File uploaded successfully: ${result.fileName}${fileInfo}`);
+                }
                 logger.info(result);
             } else {
-                spinner.fail(`Failed to upload file: ${result.error}`);
+                const mode = result.dryRun ? 'DRY RUN - Failed to analyze file' : 'Failed to upload file';
+                spinner.fail(`${mode}: ${result.error}`);
                 process.exit(1);
             }
         } catch (error) {
-            spinner.fail('Failed to upload file');
-            logger.error('Error uploading file:', error);
+            const mode = dryRun ? 'Failed to analyze file' : 'Failed to upload file';
+            spinner.fail(mode);
+            logger.error('Error:', error);
             process.exit(1);
         }
     }
 
     /**
-     * Uploads multiple files from a folder or file list
+     * Uploads multiple files from a folder or file list, or simulates the uploads in dry-run mode
      */
     async uploadFolder(options: UploadFolderOptions): Promise<void> {
-        const { groupId, folderPath, referenceBasePath } = options;
-        const spinner = ora('Processing files...').start();
+        const { groupId, folderPath, referenceBasePath, dryRun = false } = options;
+        const processingText = dryRun ? 'Analyzing files...' : 'Processing files...';
+        const spinner = ora(processingText).start();
         
         try {
             // Validate input file exists
@@ -54,7 +83,8 @@ export class UploadFileCommand {
             const fileContent = readFileSync(folderPath, 'utf-8');
             const filePaths = fileContent.split('\n').filter(line => line.trim());
 
-            spinner.text = `Found ${filePaths.length} files to process`;
+            const modeText = dryRun ? 'to analyze' : 'to process';
+            spinner.text = `Found ${filePaths.length} files ${modeText}`;
 
             // Topic mapping - this should be moved to a configuration file in the future
             const TOPIC_MAPPING: Record<string, number> = {
@@ -68,6 +98,7 @@ export class UploadFileCommand {
 
             const topicId = TOPIC_MAPPING[referenceBasePath].toString();
             const results: FileUploadResult[] = [];
+            let totalSize = 0;
 
             // Process each file
             for (const [index, filePath] of filePaths.entries()) {
@@ -78,57 +109,95 @@ export class UploadFileCommand {
                     results.push({
                         success: false,
                         fileName: cleanPath,
-                        error: 'File does not exist'
+                        error: 'File does not exist',
+                        dryRun
                     });
                     continue;
                 }
 
-                spinner.text = `Uploading file ${index + 1}/${filePaths.length}: ${cleanPath}`;
+                const actionText = dryRun ? 'Analyzing' : 'Uploading';
+                spinner.text = `${actionText} file ${index + 1}/${filePaths.length}: ${cleanPath}`;
 
                 const result = await this.fileUploadService.uploadFile({
                     groupId,
                     topicId,
-                    filePath: cleanPath
+                    filePath: cleanPath,
+                    dryRun
                 });
 
                 results.push(result);
+                
+                if (result.fileSize) {
+                    totalSize += result.fileSize;
+                }
             }
 
             // Summary
             const successful = results.filter(r => r.success).length;
             const failed = results.filter(r => !r.success).length;
+            const totalSizeText = totalSize > 0 ? ` (Total size: ${this.formatFileSize(totalSize)})` : '';
 
-            spinner.succeed(`Upload completed: ${successful} successful, ${failed} failed`);
+            if (dryRun) {
+                spinner.succeed(`DRY RUN - Analysis completed: ${successful} files ready for upload, ${failed} failed${totalSizeText}`);
+                
+                // Group by file type for summary
+                const fileTypeStats = results
+                    .filter(r => r.success && r.fileType)
+                    .reduce((acc, r) => {
+                        const type = r.fileType!;
+                        acc[type] = (acc[type] || 0) + 1;
+                        return acc;
+                    }, {} as Record<string, number>);
+
+                if (Object.keys(fileTypeStats).length > 0) {
+                    const typesSummary = Object.entries(fileTypeStats)
+                        .map(([type, count]) => `${type}: ${count}`)
+                        .join(', ');
+                    logger.info(`File types: ${typesSummary}`);
+                }
+            } else {
+                spinner.succeed(`Upload completed: ${successful} successful, ${failed} failed${totalSizeText}`);
+            }
             
             if (failed > 0) {
-                logger.warn('Failed uploads:', results.filter(r => !r.success));
+                logger.warn('Failed operations:', results.filter(r => !r.success));
             }
 
         } catch (error) {
-            spinner.fail('Failed to process files');
-            logger.error('Error processing files:', error);
+            const mode = dryRun ? 'Failed to analyze files' : 'Failed to process files';
+            spinner.fail(mode);
+            logger.error('Error:', error);
             process.exit(1);
         }
     }
 
     /**
-     * Uploads multiple files from an array of file paths
+     * Uploads multiple files from an array of file paths or simulates the uploads in dry-run mode
      */
-    async uploadMultipleFiles(filePaths: string[], groupId: string, topicId: string, caption?: string): Promise<FileUploadResult[]> {
-        const spinner = ora(`Uploading ${filePaths.length} files...`).start();
+    async uploadMultipleFiles(filePaths: string[], groupId: string, topicId: string, caption?: string, dryRun = false): Promise<FileUploadResult[]> {
+        const actionText = dryRun ? 'Analyzing' : 'Uploading';
+        const spinner = ora(`${actionText} ${filePaths.length} files...`).start();
         
         try {
-            const results = await this.fileUploadService.uploadFiles(filePaths, groupId, topicId, caption);
+            const results = await this.fileUploadService.uploadFiles(filePaths, groupId, topicId, caption, dryRun);
             
             const successful = results.filter(r => r.success).length;
             const failed = results.filter(r => !r.success).length;
             
-            spinner.succeed(`Batch upload completed: ${successful} successful, ${failed} failed`);
+            const totalSize = results.reduce((sum, r) => sum + (r.fileSize || 0), 0);
+            const totalSizeText = totalSize > 0 ? ` (Total size: ${this.formatFileSize(totalSize)})` : '';
+            
+            if (dryRun) {
+                spinner.succeed(`DRY RUN - Batch analysis completed: ${successful} files ready for upload, ${failed} failed${totalSizeText}`);
+            } else {
+                spinner.succeed(`Batch upload completed: ${successful} successful, ${failed} failed${totalSizeText}`);
+            }
             
             return results;
         } catch (error) {
-            spinner.fail('Failed to upload files');
-            logger.error('Error uploading files:', error);
+            const mode = dryRun ? 'Failed to analyze files' : 'Failed to upload files';
+            spinner.fail(mode);
+            logger.error('Error:', error);
             throw error;
         }
     }

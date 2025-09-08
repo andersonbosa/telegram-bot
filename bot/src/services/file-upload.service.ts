@@ -1,5 +1,5 @@
 import { Bot, InputFile } from 'grammy';
-import { existsSync, createReadStream } from 'fs';
+import { existsSync, createReadStream, statSync } from 'fs';
 import { basename, extname } from 'path';
 import { FileType, FileUploadResult, UploadFileOptions } from '../types';
 import { logger } from './logger.service';
@@ -40,10 +40,32 @@ export class FileUploadService {
     }
 
     /**
-     * Uploads a single file to Telegram
+     * Gets file size in bytes
+     */
+    private getFileSize(filePath: string): number {
+        try {
+            const stats = statSync(filePath);
+            return stats.size;
+        } catch {
+            return 0;
+        }
+    }
+
+    /**
+     * Formats file size for display
+     */
+    private formatFileSize(bytes: number): string {
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        if (bytes === 0) return '0 Bytes';
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    /**
+     * Uploads a single file to Telegram or simulates the upload in dry-run mode
      */
     async uploadFile(options: UploadFileOptions): Promise<FileUploadResult> {
-        const { groupId, topicId, filePath, caption } = options;
+        const { groupId, topicId, filePath, caption, dryRun = false } = options;
         
         try {
             // Validate file exists
@@ -51,12 +73,35 @@ export class FileUploadService {
                 return {
                     success: false,
                     fileName: basename(filePath),
-                    error: 'File does not exist'
+                    error: 'File does not exist',
+                    dryRun
                 };
             }
 
             const fileName = basename(filePath);
             const fileType = this.detectFileType(filePath);
+            const fileSize = this.getFileSize(filePath);
+
+            // If dry-run mode, just return the file information without uploading
+            if (dryRun) {
+                logger.info({ 
+                    fileName, 
+                    fileType, 
+                    fileSize: this.formatFileSize(fileSize),
+                    groupId,
+                    topicId,
+                    caption: caption || fileName
+                }, 'DRY RUN: Would upload file');
+                
+                return {
+                    success: true,
+                    fileName,
+                    dryRun: true,
+                    fileType,
+                    fileSize
+                };
+            }
+
             const fileStream = createReadStream(filePath);
             const inputFile = new InputFile(fileStream, fileName);
 
@@ -88,7 +133,9 @@ export class FileUploadService {
             return {
                 success: true,
                 fileName,
-                messageId: response.message_id
+                messageId: response.message_id,
+                fileType,
+                fileSize
             };
 
         } catch (error) {
@@ -98,7 +145,8 @@ export class FileUploadService {
             return {
                 success: false,
                 fileName: basename(filePath),
-                error: errorMessage
+                error: errorMessage,
+                dryRun
             };
         }
     }
@@ -106,7 +154,7 @@ export class FileUploadService {
     /**
      * Uploads multiple files from a list of file paths
      */
-    async uploadFiles(filePaths: string[], groupId: string, topicId: string, caption?: string): Promise<FileUploadResult[]> {
+    async uploadFiles(filePaths: string[], groupId: string, topicId: string, caption?: string, dryRun = false): Promise<FileUploadResult[]> {
         const results: FileUploadResult[] = [];
         
         for (const filePath of filePaths) {
@@ -114,7 +162,8 @@ export class FileUploadService {
                 groupId,
                 topicId,
                 filePath: filePath.trim(),
-                caption
+                caption,
+                dryRun
             });
             results.push(result);
         }

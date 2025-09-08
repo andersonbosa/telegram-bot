@@ -2,6 +2,7 @@
 // Command interfaces
 export interface CommandOptions {
     caption?: string;
+    dryRun?: boolean;
 }
 
 export interface UploadFileOptions extends CommandOptions {
@@ -10,7 +11,7 @@ export interface UploadFileOptions extends CommandOptions {
     filePath: string;
 }
 
-export interface UploadFolderOptions {
+export interface UploadFolderOptions extends CommandOptions {
     groupId: string;
     folderPath: string;
     referenceBasePath: string;
@@ -28,6 +29,9 @@ export interface FileUploadResult {
     fileName: string;
     messageId?: number;
     error?: string;
+    dryRun?: boolean;
+    fileType?: FileType;
+    fileSize?: number;
 }
 
 export interface ForumTopic {

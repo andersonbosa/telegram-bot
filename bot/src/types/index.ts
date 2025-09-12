@@ -1,20 +1,18 @@
-
-// Command interfaces
 export interface CommandOptions {
-    caption?: string;
-    dryRun?: boolean;
+    caption?: string
+    dryRun?: boolean
 }
 
 export interface UploadFileOptions extends CommandOptions {
-    groupId: string;
-    topicId: string;
-    filePath: string;
+    groupId: string
+    topicId: string
+    filePath: string
 }
 
 export interface UploadFolderOptions extends CommandOptions {
-    groupId: string;
-    folderPath: string;
-    referenceBasePath: string;
+    groupId: string
+    folderPath: string
+    referenceBasePath: string
 }
 
 export enum FileType {
@@ -25,28 +23,28 @@ export enum FileType {
 }
 
 export interface FileUploadResult {
-    success: boolean;
-    fileName: string;
-    messageId?: number;
-    error?: string;
-    dryRun?: boolean;
-    fileType?: FileType;
-    fileSize?: number;
+    success: boolean
+    fileName: string
+    messageId?: number
+    error?: string
+    dryRun?: boolean
+    fileType?: FileType
+    fileSize?: number
 }
 
 export interface ForumTopic {
-    message_thread_id: number;
-    name: string;
+    message_thread_id: number
+    name: string
     icon?: {
-        custom_emoji_id: string;
-    };
-    creation_date: number;
+        custom_emoji_id: string
+    }
+    creation_date: number
 }
 
 export interface TelegramResponse {
-    ok: boolean;
-    result: ForumTopic[];
-    description?: string;
+    ok: boolean
+    result: ForumTopic[]
+    description?: string
 }
 
 // só para ajudar a entender o payload
@@ -117,3 +115,23 @@ export interface TelegramMessage {
     },
     is_topic_message: boolean
 }
+
+// Tree node types
+export enum NodeType {
+    FILE = 'file',
+    DIRECTORY = 'directory'
+}
+
+export interface TreeNode {
+    id: string
+    name: string
+    absolutePath: string
+    relativePath: string
+    extension?: string
+    type: NodeType
+    size?: number
+    parentId?: string
+    childrenIds: string[]
+}
+
+export type NodeCallback = (node: TreeNode) => void | Promise<void>

@@ -1,5 +1,5 @@
 import { Context } from "grammy"
-import logger from "../services/logger.service"
+import logger from "../external/logger.service"
 
 /**
  * Abstract base class for all handlers.

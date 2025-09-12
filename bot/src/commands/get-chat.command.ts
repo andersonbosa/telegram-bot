@@ -1,6 +1,6 @@
 import { Bot } from 'grammy';
 import ora from 'ora';
-import { logger } from '../services/logger.service';
+import { logger } from '../external/logger.service';
 import { ChatFullInfo } from 'grammy/types'
 
 export class GetChatCommand {

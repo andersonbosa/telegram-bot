@@ -1,9 +1,9 @@
 import { Bot } from "grammy"
 import { configDotenv } from "dotenv"
-import { EventHandlerManager } from "./lib/event-handler.manager"
+import { EventHandlerManager } from "./internal/event-handler.manager"
 import { HelloHandler } from "./handlers/hello.handler"
 import { VideoCategorizerHandler } from "./handlers/video-categorizer.handler"
-import logger from "./services/logger.service"
+import logger from "./external/logger.service"
 import { GroupMetadataHandler } from "./handlers/group-metadata.handler"
 import { config } from "./config/config"
 

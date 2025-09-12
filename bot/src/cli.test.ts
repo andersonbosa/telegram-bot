@@ -5,7 +5,7 @@ import { SendMessageCommand, SendMessageOptions } from "./commands/send-message.
 import { UploadFileCommand } from "./commands/upload-file.command"
 import { config } from "./config/config"
 import { Message } from "grammy/types"
-import { UploadFileOptions } from "./types"
+import { UploadFileOptions, UploadFolderOptions } from "./types"
 
 
 describe('CLI', () => {
@@ -39,6 +39,7 @@ describe('CLI', () => {
 
     test('should be able to upload a file', async () => {
         // arrange
+        // const responseMock =  {"success":true,"fileName":"001 - Nome da aula 1.mp4","messageId":763,"fileType":"video","fileSize":42887}
         const input: UploadFileOptions = {
             groupId: '-1002046679214',
             topicId: '523',
@@ -49,7 +50,26 @@ describe('CLI', () => {
 
         // act
         const response = await uploadFileCommand.uploadSingleFile(input)
-        console.log(response)
+
         // assert
+        expect(response).toBeDefined()
+        expect(response.success).toBe(true)
+    })
+
+    test('should be able to upload a folder', async () => {
+        // arrange
+        const input: UploadFolderOptions = {
+            groupId: '-1002046679214',
+            folderPath: '../data/FullCycle',
+            referenceBasePath: 'FullCycle',
+            dryRun: true
+        }
+
+        // act
+        const response = await uploadFileCommand.uploadFolder(input)
+        console.log('==== response:', response)
+
+        // assert
+        expect(response).toBeDefined()
     })
 })

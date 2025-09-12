@@ -1,7 +1,7 @@
 import { Bot } from 'grammy'
 import { Message } from 'grammy/types'
 import ora from 'ora'
-import { logger } from '../services/logger.service'
+import { logger } from '../external/logger.service'
 
 export interface SendMessageOptions {
     groupId: string;

@@ -2,7 +2,7 @@ import { Bot, FilterQuery } from "grammy"
 import { BaseHandler } from "../handlers/base.handler"
 import { ChainableHandlerImpl } from "./chainable-handler-impl"
 import { ChainableHandler } from "../handlers/chainable.handler"
-import logger from "../services/logger.service"
+import logger from "../external/logger.service"
 
 /**
  * Manages the registration and attachment of event handlers for a Telegram bot.

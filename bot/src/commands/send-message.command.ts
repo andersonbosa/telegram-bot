@@ -1,6 +1,7 @@
-import { Bot } from 'grammy';
-import ora from 'ora';
-import { logger } from '../services/logger.service';
+import { Bot } from 'grammy'
+import { Message } from 'grammy/types'
+import ora from 'ora'
+import { logger } from '../services/logger.service'
 
 export interface SendMessageOptions {
     groupId: string;
@@ -18,7 +19,7 @@ export class SendMessageCommand {
     /**
      * Sends a message to a specific group and topic
      */
-    async execute(options: SendMessageOptions): Promise<void> {
+    async execute(options: SendMessageOptions): Promise<Message.TextMessage> {
         const { groupId, topicId, message } = options;
         const spinner = ora('Sending message...').start();
         
@@ -29,6 +30,7 @@ export class SendMessageCommand {
             
             spinner.succeed('Message sent successfully');
             logger.info(response);
+            return response;
         } catch (error) {
             spinner.fail('Failed to send message');
             logger.error('Error sending message:', error);

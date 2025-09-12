@@ -1,6 +1,7 @@
 import { Bot } from 'grammy';
 import ora from 'ora';
 import { logger } from '../services/logger.service';
+import { ChatFullInfo } from 'grammy/types'
 
 export class GetChatCommand {
     private bot: Bot;
@@ -12,7 +13,7 @@ export class GetChatCommand {
     /**
      * Gets information about a specific chat/group
      */
-    async execute(groupId: string): Promise<void> {
+    async execute(groupId: string): Promise<ChatFullInfo> {
         const spinner = ora('Fetching group information...').start();
 
         try {
@@ -23,6 +24,7 @@ export class GetChatCommand {
 
             spinner.succeed('Successfully fetched group information');
             logger.info(response);
+            return response;
 
         } catch (error) {
             spinner.fail('Failed to fetch group information');

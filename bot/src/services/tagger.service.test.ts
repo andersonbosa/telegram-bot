@@ -1,9 +1,9 @@
 import assert from "node:assert"
-import { describe, it } from "node:test"
+import { describe, test } from "vitest"
 import { TaggerService } from "./tagger.service"
 
 describe("TaggerService", () => {
-    it("should generate tags for a file", async () => {
+    test("should generate tags for a file", async () => {
         const taggerService = new TaggerService()
         const output = await taggerService.classify({
             referenceBasePath: "FullCycle",
@@ -15,7 +15,7 @@ describe("TaggerService", () => {
         ])
     })
 
-    it("should generate tags for all files in demo.txt", async () => {
+    test("should generate tags for all files in demo.txt", async () => {
         const taggerService = new TaggerService()
         const demoFilePaths = [
             "/Users/anbosa/devspace/__vibe_coding__/telegram_bot/data/FullCycle/001 - curso docker/001 - aula de docker/001 - Nome da aula 1.mp4",

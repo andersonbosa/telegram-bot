@@ -5,13 +5,14 @@ import { HelloHandler } from "./handlers/hello.handler"
 import { VideoCategorizerHandler } from "./handlers/video-categorizer.handler"
 import logger from "./services/logger.service"
 import { GroupMetadataHandler } from "./handlers/group-metadata.handler"
+import { config } from "./config/config"
 
 configDotenv()
 
-async function main() {
+export function createBot() {
     logger.info("Bot is starting...")
 
-    const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!)
+    const bot = new Bot(config.telegram.botToken!)
 
     const eventHandlerManager = new EventHandlerManager()
     // eventHandlerManager.register("message", new HelloHandler())
@@ -25,7 +26,11 @@ async function main() {
         const ctx = err.ctx
         logger.error({ error: err, update: ctx.update }, "Error while handling update")
     })
+    return bot
+}
 
+async function main() {
+    const bot = createBot()
     bot.start()
 }
 

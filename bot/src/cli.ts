@@ -7,9 +7,9 @@ import { UploadFileCommand } from './commands/upload-file.command'
 import { GetChatCommand } from './commands/get-chat.command'
 import { SendMessageCommand } from './commands/send-message.command'
 
-export const program = new Command()
+const cli = new Command()
 
-program
+cli
     .name('telegram-bot-cli')
     .description('CLI for managing Telegram bot operations')
     .version('1.0.0')
@@ -21,7 +21,7 @@ const uploadFileCommand = new UploadFileCommand(bot)
 const getChatCommand = new GetChatCommand(bot)
 const sendMessageCommand = new SendMessageCommand(bot)
 
-program
+cli
     .command('get-chat')
     .description('Get a specific chat')
     .argument('<groupId>', 'Telegram group ID')
@@ -29,7 +29,7 @@ program
         await getChatCommand.execute(groupId)
     })
 
-program
+cli
     .command('send-message')
     .description('Send a message to a specific group')
     .argument('<groupId>', 'Telegram group ID')
@@ -39,7 +39,7 @@ program
         await sendMessageCommand.execute({ groupId, topicId, message })
     })
 
-program
+cli
     .command('upload-file')
     .description('Upload a file to a specific group and topic')
     .argument('<groupId>', 'Telegram group ID')
@@ -58,7 +58,7 @@ program
     })
 
 
-program
+cli
     .command('upload-folder')
     .description('Upload all files from a folder to a specific group and topic')
     .argument('<groupId>', 'Telegram group ID')
@@ -74,5 +74,9 @@ program
         })
     })
 
-// Parse command line arguments
-program.parse()
+if (process.env.NODE_ENV !== 'test') {
+    // Parse command line arguments
+    cli.parse()
+}
+
+export { cli }

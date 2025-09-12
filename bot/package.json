@@ -14,7 +14,10 @@
     "cli": "tsx src/cli.ts",
     "cli:dev": "tsx --watch src/cli.ts",
     "cli:build": "tsc && chmod +x dist/cli.js",
-    "test": "tsx --watch ./**/*.test.ts"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "engines": {
     "node": ">=20.x"
@@ -27,7 +30,8 @@
     "pino-pretty": "^13.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "chalk": "^5.4.1",

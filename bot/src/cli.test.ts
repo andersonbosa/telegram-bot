@@ -6,6 +6,7 @@ import { UploadFileCommand } from "./commands/upload-file.command"
 import { config } from "./config/config"
 import { Message } from "grammy/types"
 import { UploadFileOptions, UploadFolderOptions } from "./types"
+import { TestUtils } from "./test/utils"
 
 
 describe('CLI', () => {
@@ -16,9 +17,20 @@ describe('CLI', () => {
     bot.start()
 
     test('should be able to get a chat', async () => {
-        const response = await getChatCommand.execute('-1002046679214')
+        // arrange
+        const responseMock = TestUtils.getMockFromJsonFile('command-get-chat')
+        const getChatStub = vi
+            .spyOn(getChatCommand['bot'].api, 'getChat')
+            .mockResolvedValue(responseMock)
+        const commandInput = '-1002046679214'
+        
+        // act
+        const response = await getChatCommand.execute(commandInput)
+
+        // assert
         expect(response).toBeDefined()
         expect(response.id).toBe(-1002046679214)
+        expect(getChatStub).toHaveBeenCalledWith(commandInput)
     })
 
     test('should be able to send a message', async () => {
@@ -67,7 +79,7 @@ describe('CLI', () => {
 
         // act
         const response = await uploadFileCommand.uploadFolder(input)
-        console.log('==== response:', response)
+        // console.log('==== response:', response)
 
         // assert
         expect(response).toBeDefined()

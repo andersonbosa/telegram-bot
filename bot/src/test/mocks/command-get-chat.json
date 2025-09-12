@@ -1,0 +1,60 @@
+{
+    "id": -1002046679214,
+    "title": "Sharizard II",
+    "is_forum": true,
+    "type": "supergroup",
+    "invite_link": "https://t.me/+s0OIzyiKLdxhNWJh",
+    "has_visible_history": true,
+    "permissions": {
+        "can_send_messages": true,
+        "can_send_media_messages": true,
+        "can_send_audios": true,
+        "can_send_documents": true,
+        "can_send_photos": true,
+        "can_send_videos": true,
+        "can_send_video_notes": true,
+        "can_send_voice_notes": true,
+        "can_send_polls": true,
+        "can_send_other_messages": true,
+        "can_add_web_page_previews": true,
+        "can_change_info": false,
+        "can_invite_users": false,
+        "can_pin_messages": false,
+        "can_manage_topics": false
+    },
+    "join_to_send_messages": true,
+    "accepted_gift_types": {
+        "unlimited_gifts": false,
+        "limited_gifts": false,
+        "unique_gifts": false,
+        "premium_subscription": false
+    },
+    "photo": {
+        "small_file_id": "AQADAQADRKwxG6gb0UcACAIAA1IXXbEW____ZvS5yCTi61g2BA",
+        "small_file_unique_id": "AQADRKwxG6gb0UcAAQ",
+        "big_file_id": "AQADAQADRKwxG6gb0UcACAMAA1IXXbEW____ZvS5yCTi61g2BA",
+        "big_file_unique_id": "AQADRKwxG6gb0UcB"
+    },
+    "pinned_message": {
+        "message_id": 399,
+        "from": {
+            "id": 6498809249,
+            "is_bot": false,
+            "first_name": "Anderson",
+            "username": "andersounde",
+            "language_code": "en"
+        },
+        "chat": {
+            "id": -1002046679214,
+            "title": "Sharizard II",
+            "is_forum": true,
+            "type": "supergroup"
+        },
+        "date": 1732721996,
+        "message_thread_id": 398,
+        "text": "init",
+        "is_topic_message": true
+    },
+    "max_reaction_count": 11,
+    "accent_color_id": 6
+}

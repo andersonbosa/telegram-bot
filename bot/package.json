@@ -15,6 +15,7 @@
     "cli:dev": "tsx --watch src/cli.ts",
     "cli:build": "tsc && chmod +x dist/cli.js",
     "test": "vitest",
+    "test:debug": "vitest --inspect --no-file-parallelism",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui"

@@ -6,6 +6,7 @@ import { FileUploadService } from '../external/file-upload.service'
 import { logger } from '../external/logger.service'
 import { FileUploadResult, UploadFileOptions, UploadFolderOptions, TreeNode, NodeType } from '../types'
 import { FolderTreeFactory, FolderTree } from '../internal/tree-node.lib'
+import { parseToTelegramHashtag } from '../utils'
 
 export class UploadFileCommand {
     private fileUploadService: FileUploadService
@@ -133,12 +134,18 @@ export class UploadFileCommand {
                 const actionText = dryRun ? 'Analyzing' : 'Uploading'
                 spinner.text = `${actionText} file ${index + 1}/${allFiles.length}: ${node.relativePath}`
 
-                const result = await this.fileUploadService.uploadFile({
+                const [tagGroup, tagSubGroup] = node.relativePath.split('/').map(parseToTelegramHashtag)
+
+                const input = {
                     groupId,
                     topicId,
                     filePath,
-                    dryRun
-                })
+                    dryRun,
+                    caption: `${node.name} \n#${tagGroup} #${tagSubGroup} `,
+                }
+                // console.log( '===========================', input )
+                const result = await this.fileUploadService.uploadFile(input)
+                // const result = { success: true, fileName: node.name, fileSize: node.size, dryRun }
 
                 results.push(result)
 

@@ -8,17 +8,16 @@
   },
   "scripts": {
     "dev": "LOG_LEVEL=debug tsx --watch --inspect ./src/index.ts",
-    "start": "node ./dist/index.js",
+    "start": "node --no-warnings ./dist/index.js",
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "build:cli": "tsc && chmod +x dist/cli.js",
     "cli": "tsx src/cli.ts",
-    "cli:dev": "tsx --watch src/cli.ts",
-    "cli:build": "tsc && chmod +x dist/cli.js",
-    "test": "vitest",
-    "test:debug": "vitest --inspect --no-file-parallelism",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test": "NODE_ENV=test vitest",
+    "test:debug": "NODE_ENV=test vitest --inspect --no-file-parallelism",
+    "test:run": "NODE_ENV=test vitest run",
+    "test:coverage": "NODE_ENV=test vitest run --coverage",
+    "test:ui": "NODE_ENV=test vitest --ui"
   },
   "engines": {
     "node": ">=20.x"

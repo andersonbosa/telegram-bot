@@ -1,12 +1,12 @@
 import { Bot } from "grammy"
+import { Message } from "grammy/types"
 import { describe, expect, test, vi } from "vitest"
 import { GetChatCommand } from "./commands/get-chat.command"
 import { SendMessageCommand, SendMessageOptions } from "./commands/send-message.command"
 import { UploadFileCommand } from "./commands/upload-file.command"
 import { config } from "./config/config"
-import { Message } from "grammy/types"
-import { UploadFileOptions, UploadFolderOptions } from "./types"
 import { TestUtils } from "./test/utils"
+import { UploadFileOptions, UploadFolderOptions } from "./types"
 
 
 describe('CLI', () => {
@@ -23,7 +23,7 @@ describe('CLI', () => {
             .spyOn(getChatCommand['bot'].api, 'getChat')
             .mockResolvedValue(responseMock)
         const commandInput = '-1002046679214'
-        
+
         // act
         const response = await getChatCommand.execute(commandInput)
 
@@ -35,7 +35,7 @@ describe('CLI', () => {
 
     test('should be able to send a message', async () => {
         // arrange
-        const responseMock: Message.TextMessage = { "message_id": 761, "from": { "id": 8379104327, "is_bot": true, "first_name": "sharizard", "username": "sharichan_bot" }, "chat": { "id": -1002046679214, "title": "Sharizard II", "is_forum": true, "type": "supergroup" }, "date": 1757629071, "message_thread_id": 523, "reply_to_message": { "message_id": 523, "from": { "id": 6498809249, "is_bot": false, "first_name": "Anderson", "username": "andersounde", "language_code": "en" }, "chat": { "id": -1002046679214, "title": "Sharizard II", "is_forum": true, "type": "supergroup" }, "date": 1753792425, "message_thread_id": 523, "forum_topic_created": { "name": "Software/FullCycle/Curso3.0", "icon_color": 9367192 }, "is_topic_message": true }, "text": "teste", "is_topic_message": true }
+        const responseMock: Message.TextMessage = TestUtils.getMockFromJsonFile('command-send-message')
         const sendMessageStub = vi
             .spyOn(sendMessageCommand['bot'].api, 'sendMessage')
             .mockResolvedValue(responseMock)
@@ -79,7 +79,6 @@ describe('CLI', () => {
 
         // act
         const response = await uploadFileCommand.uploadFolder(input)
-        // console.log('==== response:', response)
 
         // assert
         expect(response).toBeDefined()

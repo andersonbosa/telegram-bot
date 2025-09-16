@@ -2,10 +2,10 @@
 
 import { Command } from 'commander'
 import { Bot } from 'grammy'
-import { config } from './config/config'
-import { UploadFileCommand } from './commands/upload-file.command'
 import { GetChatCommand } from './commands/get-chat.command'
 import { SendMessageCommand } from './commands/send-message.command'
+import { UploadFileCommand } from './commands/upload-file.command'
+import { config } from './config/config'
 
 const cli = new Command()
 
@@ -26,7 +26,8 @@ cli
     .description('Get a specific chat')
     .argument('<groupId>', 'Telegram group ID')
     .action(async (groupId: string) => {
-        await getChatCommand.execute(groupId)
+        const response = await getChatCommand.execute(groupId)
+        console.log(JSON.stringify(response, null, 2))
     })
 
 cli
@@ -36,7 +37,8 @@ cli
     .argument('<topicId>', 'Telegram topic ID')
     .argument('<message>', 'Message to send')
     .action(async (groupId: string, topicId: string, message: string) => {
-        await sendMessageCommand.execute({ groupId, topicId, message })
+        const response = await sendMessageCommand.execute({ groupId, topicId, message })
+        console.log(JSON.stringify(response, null, 2))
     })
 
 cli
@@ -48,13 +50,14 @@ cli
     .option('-c, --caption <caption>', 'Caption for the file', '')
     .option('-d, --dry-run', 'Simulate the upload without actually uploading the file', false)
     .action(async (groupId: string, topicId: string, filePath: string, options: { caption?: string; dryRun?: boolean }) => {
-        await uploadFileCommand.uploadSingleFile({
+        const response = await uploadFileCommand.uploadSingleFile({
             groupId,
             topicId,
             filePath,
             caption: options.caption,
             dryRun: options.dryRun
         })
+        console.log(JSON.stringify(response, null, 2))
     })
 
 
@@ -66,16 +69,17 @@ cli
     .argument('<referenceBasePath>', 'Path to the reference base path')
     .option('-d, --dry-run', 'Simulate the uploads without actually uploading the files', false)
     .action(async (groupId: string, folderPath: string, referenceBasePath: string, options: { dryRun?: boolean }) => {
-        await uploadFileCommand.uploadFolder({
+        const response = await uploadFileCommand.uploadFolder({
             groupId,
             folderPath,
             referenceBasePath,
             dryRun: options.dryRun
         })
+        console.log(JSON.stringify(response, null, 2))
     })
 
-if (process.env.NODE_ENV !== 'test') {
-    // Parse command line arguments
+// Parse command line arguments
+if (config.env !== 'test') {
     cli.parse()
 }
 

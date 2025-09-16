@@ -7,12 +7,28 @@ import { logger } from '../external/logger.service'
 import { FileUploadResult, UploadFileOptions, UploadFolderOptions, TreeNode, NodeType } from '../types'
 import { FolderTreeFactory, FolderTree } from '../internal/tree-node.lib'
 import { parseToTelegramHashtag } from '../utils'
+import { config } from '../config/config'
 
 export class UploadFileCommand {
     private fileUploadService: FileUploadService
 
     constructor(bot: Bot) {
         this.fileUploadService = new FileUploadService(bot)
+    }
+
+    /**
+     * Applies rate limiting delay if enabled
+     */
+    private async applyRateLimit(): Promise<void> {
+        if (!config.telegram.rateLimiting.enabled) {
+            return
+        }
+
+        const delayMs = config.telegram.rateLimiting.uploadDelayMs
+        if (delayMs > 0) {
+            logger.debug({ delayMs }, 'Applying rate limit delay')
+            await new Promise(resolve => setTimeout(resolve, delayMs))
+        }
     }
 
     /**
@@ -52,7 +68,7 @@ export class UploadFileCommand {
                     const fileInfo = result.fileSize ? ` (${this.formatFileSize(result.fileSize)})` : ''
                     spinner.succeed(`File uploaded successfully: ${result.fileName}${fileInfo}`)
                 }
-                logger.info(result)
+
                 return result
             } else {
                 const mode = result.dryRun ? 'DRY RUN - Failed to analyze file' : 'Failed to upload file'
@@ -85,14 +101,14 @@ export class UploadFileCommand {
             // 1. Criar uma "arvore de nós" com os arquivos e pastas. Assim teremos uma estrutura de dados com os dados que precisamos (por exemplo, caminho absoluto de cada arquivo/pasta/nó)
             const tree = await FolderTreeFactory.create(folderPath)
             const stats = tree.getStats()
-            
+
             // Log da estrutura criada
             logger.info(`Tree structure created: ${stats.totalNodes} nodes (${stats.fileCount} files, ${stats.directoryCount} directories)`)
-            
+
             // 2. Coletar todos os arquivos da árvore
             const allFiles: Array<{ node: TreeNode; index: number }> = []
             let fileIndex = 0
-            
+
             await tree.forEachNode((node) => {
                 if (node.type === NodeType.FILE) {
                     allFiles.push({ node, index: fileIndex++ })
@@ -116,7 +132,7 @@ export class UploadFileCommand {
             const results: FileUploadResult[] = []
             let totalSize = 0
 
-            // 4. Process each file from the tree
+            // 4. Process each file from the tree with rate limiting
             for (const { node, index } of allFiles) {
                 const filePath = node.absolutePath
 
@@ -129,6 +145,17 @@ export class UploadFileCommand {
                         dryRun
                     })
                     continue
+                }
+
+                // Apply rate limiting delay before each upload (except the first one)
+                if (index > 0) {
+                    await this.applyRateLimit()
+
+                    // Update spinner text to show rate limiting
+                    if (config.telegram.rateLimiting.enabled && config.telegram.rateLimiting.uploadDelayMs > 0) {
+                        const actionText = dryRun ? 'Analyzing' : 'Uploading'
+                        spinner.text = `${actionText} file ${index + 1}/${allFiles.length}: ${node.relativePath} (applied ${config.telegram.rateLimiting.uploadDelayMs}ms delay)`
+                    }
                 }
 
                 const actionText = dryRun ? 'Analyzing' : 'Uploading'
@@ -166,7 +193,7 @@ export class UploadFileCommand {
 
                 // Group by file type for summary using tree data
                 const fileTypeStats: Record<string, number> = {}
-                
+
                 await tree.forEachNode((node) => {
                     if (node.type === NodeType.FILE && node.extension) {
                         const ext = node.extension.toLowerCase()
@@ -252,7 +279,7 @@ export class UploadFileCommand {
     private getMaxDepth(tree: FolderTree): number {
         let maxDepth = 0
         const rootNode = tree.getRootNode()
-        
+
         if (rootNode) {
             const calculateMaxDepth = (node: TreeNode, currentDepth: number): void => {
                 maxDepth = Math.max(maxDepth, currentDepth)
@@ -261,10 +288,10 @@ export class UploadFileCommand {
                     calculateMaxDepth(child, currentDepth + 1)
                 }
             }
-            
+
             calculateMaxDepth(rootNode, 0)
         }
-        
+
         return maxDepth
     }
 }

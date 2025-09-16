@@ -1,35 +1,35 @@
-import { Bot } from 'grammy';
-import ora from 'ora';
-import { logger } from '../external/logger.service';
+import { Bot } from 'grammy'
+import ora from 'ora'
+import { logger } from '../external/logger.service'
 import { ChatFullInfo } from 'grammy/types'
 
 export class GetChatCommand {
-    private bot: Bot;
+    private bot: Bot
 
     constructor(bot: Bot) {
-        this.bot = bot;
+        this.bot = bot
     }
 
     /**
      * Gets information about a specific chat/group
      */
     async execute(groupId: string): Promise<ChatFullInfo> {
-        const spinner = ora('Fetching group information...').start();
+        const spinner = ora('Fetching group information...').start()
 
         try {
-            const response = await this.bot.api.getChat(groupId);
+            const response = await this.bot.api.getChat(groupId)
             if (!response) {
-                throw new Error('Failed to fetch chat information');
+                throw new Error('Failed to fetch chat information')
             }
 
-            spinner.succeed('Successfully fetched group information');
-            logger.info(response);
-            return response;
+            spinner.succeed('Successfully fetched group information')
+
+            return response
 
         } catch (error) {
-            spinner.fail('Failed to fetch group information');
-            logger.error('Error fetching group information:', error);
-            process.exit(1);
+            spinner.fail('Failed to fetch group information')
+            logger.error('Error fetching group information:', error)
+            process.exit(1)
         }
     }
 }

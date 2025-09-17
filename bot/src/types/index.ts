@@ -51,3 +51,23 @@ export interface TreeNode {
 }
 
 export type NodeCallback = (node: TreeNode) => void | Promise<void>
+
+// Checkpoint types
+export interface UploadCheckpoint {
+    sessionId: string
+    startTime: string
+    lastUpdate: string
+    params: {
+        groupId: string
+        folderPath: string
+        referenceBasePath: string
+        dryRun: boolean
+    }
+    stats: {
+        totalFiles: number
+        processedFiles: number
+        successfulUploads: number
+        failedUploads: number
+    }
+    completedFiles: string[] // Array of relative paths of completed files
+}

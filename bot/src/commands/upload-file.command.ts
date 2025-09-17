@@ -8,6 +8,7 @@ import { FileUploadResult, UploadFileOptions, UploadFolderOptions, TreeNode, Nod
 import { FolderTreeFactory, FolderTree } from '../internal/tree-node.lib'
 import { parseToTelegramHashtag } from '../utils'
 import { config } from '../config/config'
+import { CheckpointManager } from '../managers/checkpoint.manager'
 
 export class UploadFileCommand {
     private fileUploadService: FileUploadService
@@ -88,8 +89,15 @@ export class UploadFileCommand {
      */
     async uploadFolder(options: UploadFolderOptions): Promise<FileUploadResult[]> {
         const { groupId, folderPath, referenceBasePath, dryRun = false } = options
+
+        // 1. Initialize checkpoint manager
+        const checkpointManager = new CheckpointManager(options)
+        const checkpoint = checkpointManager.load(options)
+        const isResume = checkpointManager.isResume()
+
         const processingText = dryRun ? 'Analyzing files...' : 'Processing files...'
-        const spinner = ora(processingText).start()
+        const resumeInfo = isResume ? ` (Resuming: ${checkpoint.completedFiles.length} files already processed)` : ''
+        const spinner = ora(processingText + resumeInfo).start()
 
         try {
             // Validate input file exists
@@ -105,18 +113,30 @@ export class UploadFileCommand {
             // Log da estrutura criada
             logger.info(`Tree structure created: ${stats.totalNodes} nodes (${stats.fileCount} files, ${stats.directoryCount} directories)`)
 
-            // 2. Coletar todos os arquivos da árvore
+            // 2. Collect all files and filter already processed ones
             const allFiles: Array<{ node: TreeNode; index: number }> = []
+            const skippedFiles: Array<TreeNode> = []
             let fileIndex = 0
 
             await tree.forEachNode((node) => {
                 if (node.type === NodeType.FILE) {
-                    allFiles.push({ node, index: fileIndex++ })
+                    if (checkpointManager.isCompleted(node.relativePath)) {
+                        skippedFiles.push(node)
+                    } else {
+                        allFiles.push({ node, index: fileIndex++ })
+                    }
                 }
             })
 
+            // Update total files count in checkpoint
+            const totalFiles = allFiles.length + skippedFiles.length
+            checkpointManager.setTotalFiles(totalFiles)
+
             const modeText = dryRun ? 'to analyze' : 'to process'
-            spinner.text = `Found ${allFiles.length} files ${modeText}`
+            const filesInfo = isResume ?
+                `${allFiles.length} remaining files ${modeText} (${skippedFiles.length} already completed)` :
+                `${allFiles.length} files ${modeText}`
+            spinner.text = filesInfo
 
             // 3. Topic mapping - this should be moved to a configuration file in the future
             const TOPIC_MAPPING: Record<string, number> = {
@@ -138,12 +158,14 @@ export class UploadFileCommand {
 
                 if (!existsSync(filePath)) {
                     logger.warn(`File does not exist: ${filePath}`)
-                    results.push({
+                    const failedResult = {
                         success: false,
                         fileName: node.name,
                         error: 'File does not exist',
                         dryRun
-                    })
+                    }
+                    results.push(failedResult)
+                    checkpointManager.markFailed()
                     continue
                 }
 
@@ -154,12 +176,14 @@ export class UploadFileCommand {
                     // Update spinner text to show rate limiting
                     if (config.telegram.rateLimiting.enabled && config.telegram.rateLimiting.uploadDelayMs > 0) {
                         const actionText = dryRun ? 'Analyzing' : 'Uploading'
-                        spinner.text = `${actionText} file ${index + 1}/${allFiles.length}: ${node.relativePath} (applied ${config.telegram.rateLimiting.uploadDelayMs}ms delay)`
+                        const currentFile = checkpoint.stats.processedFiles + 1
+                        spinner.text = `${actionText} file ${currentFile}/${totalFiles}: ${node.relativePath} (applied ${config.telegram.rateLimiting.uploadDelayMs}ms delay)`
                     }
                 }
 
                 const actionText = dryRun ? 'Analyzing' : 'Uploading'
-                spinner.text = `${actionText} file ${index + 1}/${allFiles.length}: ${node.relativePath}`
+                const currentFile = checkpoint.stats.processedFiles + 1
+                spinner.text = `${actionText} file ${currentFile}/${totalFiles}: ${node.relativePath}`
 
                 const [tagGroup, tagSubGroup] = node.relativePath.split('/').map(parseToTelegramHashtag)
 
@@ -170,23 +194,52 @@ export class UploadFileCommand {
                     dryRun,
                     caption: `${node.name} \n#${tagGroup} #${tagSubGroup} `,
                 }
-                // console.log( '===========================', input )
-                const result = await this.fileUploadService.uploadFile(input)
-                // const result = { success: true, fileName: node.name, fileSize: node.size, dryRun }
 
-                results.push(result)
+                try {
+                    const result = await this.fileUploadService.uploadFile(input)
+                    results.push(result)
 
-                if (result.fileSize) {
-                    totalSize += result.fileSize
-                } else if (node.size) {
-                    totalSize += node.size
+                    if (result.success) {
+                        checkpointManager.markCompleted(node.relativePath)
+                    } else {
+                        checkpointManager.markFailed()
+                    }
+
+                    if (result.fileSize) {
+                        totalSize += result.fileSize
+                    } else if (node.size) {
+                        totalSize += node.size
+                    }
+
+                    // Save checkpoint every file
+                    if (checkpoint.stats.processedFiles % 1 === 0) {
+                        checkpointManager.save()
+                    }
+
+                    setInterval(() => { throw new Error('teste') }, 2000)
+
+
+                } catch (error) {
+                    const failedResult = {
+                        success: false,
+                        fileName: node.name,
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                        dryRun
+                    }
+                    results.push(failedResult)
+                    checkpointManager.markFailed()
+                    logger.error(`Failed to upload ${node.relativePath}:`, error)
                 }
             }
 
-            // 5. Summary
-            const successful = results.filter(r => r.success).length
-            const failed = results.filter(r => !r.success).length
+            // 5. Summary and checkpoint management
+            const checkpointStats = checkpointManager.getStats()
+            const successful = checkpointStats?.successfulUploads ?? 0
+            const failed = checkpointStats?.failedUploads ?? 0
             const totalSizeText = totalSize > 0 ? ` (Total size: ${this.formatFileSize(totalSize)})` : ''
+
+            // Save final checkpoint state
+            checkpointManager.save()
 
             if (dryRun) {
                 spinner.succeed(`DRY RUN - Analysis completed: ${successful} files ready for upload, ${failed} failed${totalSizeText}`)
@@ -218,16 +271,36 @@ export class UploadFileCommand {
                 spinner.succeed(`Upload completed: ${successful} successful, ${failed} failed${totalSizeText}`)
             }
 
-            if (failed > 0) {
+            // Checkpoint cleanup and user feedback
+            if (failed === 0 && allFiles.length === 0) {
+                // All files processed successfully or no files to process
+                checkpointManager.cleanup()
+                if (isResume) {
+                    console.log('✅ All files processed successfully - checkpoint cleaned up')
+                }
+            } else if (failed > 0) {
+                console.log(`\n💾 Progress saved. To retry failed uploads, run the same command again.`)
+                console.log(`📁 To start fresh, delete: ${checkpointManager.getFilename()}`)
                 logger.warn('Failed operations:', results.filter(r => !r.success))
+            } else {
+                // Successful completion
+                checkpointManager.cleanup()
+                console.log('✅ Upload completed successfully - checkpoint cleaned up')
             }
 
             return results
 
         } catch (error) {
+            // Save progress even in case of critical error
+            checkpointManager.save()
+
             const mode = dryRun ? 'Failed to analyze files' : 'Failed to process files'
             spinner.fail(mode)
             logger.error('Error:', error)
+
+            console.log(`\n💾 Progress saved. To retry, run the same command again.`)
+            console.log(`📁 To start fresh, delete: ${checkpointManager.getFilename()}`)
+
             if (!isCommandError(error)) {
                 logger.info('Error is not a command error', error)
                 throw error
